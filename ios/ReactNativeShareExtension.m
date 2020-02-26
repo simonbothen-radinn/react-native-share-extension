@@ -6,6 +6,11 @@
 #define IMAGE_IDENTIFIER @"public.image"
 #define TEXT_IDENTIFIER (NSString *)kUTTypePlainText
 
+#define VIDEO_IDENTIFIER_MPEG_4 @"public.mpeg-4"
+#define VIDEO_IDENTIFIER_QUICK_TIME_MOVIE @"com.apple.quicktime-movie"
+
+NSString *VideoIdentifier;
+
 NSExtensionContext* extensionContext;
 
 @implementation ReactNativeShareExtension {
@@ -75,6 +80,7 @@ RCT_REMAP_METHOD(data,
         __block NSItemProvider *urlProvider = nil;
         __block NSItemProvider *imageProvider = nil;
         __block NSItemProvider *textProvider = nil;
+        __block NSItemProvider *videoProvider = nil;
 
         [attachments enumerateObjectsUsingBlock:^(NSItemProvider *provider, NSUInteger idx, BOOL *stop) {
             if([provider hasItemConformingToTypeIdentifier:URL_IDENTIFIER]) {
@@ -86,6 +92,14 @@ RCT_REMAP_METHOD(data,
             } else if ([provider hasItemConformingToTypeIdentifier:IMAGE_IDENTIFIER]){
                 imageProvider = provider;
                 *stop = YES;
+      } else if ([provider hasItemConformingToTypeIdentifier:VIDEO_IDENTIFIER_MPEG_4]) {
+          videoProvider = provider;
+          VideoIdentifier = VIDEO_IDENTIFIER_MPEG_4;
+          *stop = YES;
+      } else if([provider hasItemConformingToTypeIdentifier:VIDEO_IDENTIFIER_QUICK_TIME_MOVIE]) {
+          videoProvider = provider;
+          VideoIdentifier = VIDEO_IDENTIFIER_QUICK_TIME_MOVIE;
+          *stop = YES;
             }
         }];
 
@@ -110,7 +124,15 @@ RCT_REMAP_METHOD(data,
                 NSString *text = (NSString *)item;
 
                 if(callback) {
-                    callback(text, @"text/plain", nil);
+                 callback(text, @"text/plain", nil);
+          }
+      }];
+        } else if(videoProvider) {
+            [videoProvider loadItemForTypeIdentifier:VideoIdentifier options:nil completionHandler:^(id<NSSecureCoding> item, NSError *error) {
+                NSURL *url = (NSURL *)item;
+
+                if(callback) {
+                    callback([url absoluteString], [[[url absoluteString] pathExtension] lowercaseString], nil);
                 }
             }];
         } else {
